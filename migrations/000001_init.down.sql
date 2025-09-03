@@ -1,0 +1,7 @@
+DROP TABLE "order" CASCADE;
+
+DROP TABLE delivery CASCADE;
+
+DROP TABLE payment CASCADE;
+
+DROP TABLE item CASCADE;

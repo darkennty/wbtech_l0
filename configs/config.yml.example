@@ -1,0 +1,12 @@
+port: <port>
+
+db:
+  host: <hostname>
+  ssl_mode: <ssl_mode_option>
+
+kafka:
+  address_1: <address_of_first_consumer>
+  address_2: <address_of_second_consumer>
+  address_3: <address_of_third_consumer>
+  topic: <topic_name>
+  consumer_group: <consumer_group_name>

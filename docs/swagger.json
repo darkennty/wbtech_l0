@@ -1,0 +1,223 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Go-microservice consisting of Kafka consumer and JSON API handler",
+        "title": "Orders Service",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8000",
+    "basePath": "/",
+    "paths": {
+        "/order/{id}": {
+            "get": {
+                "description": "Handler for getting order from db/cache by its order_uid",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Get Order By ID",
+                "operationId": "get-order-by-id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order UID (UUID string)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Order"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.errorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Delivery": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "zip": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Item": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "chrt_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nm_id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "rid": {
+                    "type": "string"
+                },
+                "sale": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "total_price": {
+                    "type": "integer"
+                },
+                "track_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Order": {
+            "type": "object",
+            "properties": {
+                "customer_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "delivery": {
+                    "$ref": "#/definitions/model.Delivery"
+                },
+                "delivery_service": {
+                    "type": "string"
+                },
+                "entry": {
+                    "type": "string"
+                },
+                "internal_signature": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Item"
+                    }
+                },
+                "locale": {
+                    "type": "string"
+                },
+                "oof_shard": {
+                    "type": "string"
+                },
+                "order_uid": {
+                    "type": "string"
+                },
+                "payment": {
+                    "$ref": "#/definitions/model.Payment"
+                },
+                "shardkey": {
+                    "type": "string"
+                },
+                "sm_id": {
+                    "type": "integer"
+                },
+                "track_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "bank": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "custom_fee": {
+                    "type": "integer"
+                },
+                "delivery_cost": {
+                    "type": "integer"
+                },
+                "goods_total": {
+                    "type": "integer"
+                },
+                "payment_dt": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
