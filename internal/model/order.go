@@ -63,3 +63,39 @@ type Email string
 //func (e *Email) checkEmail() {
 //
 //}
+
+type DBResult struct {
+	// Order
+	OrderUID          uuid.UUID `db:"order_uid"`
+	TrackNumber       string    `db:"track_number"`
+	Entry             string    `db:"entry"`
+	Locale            string    `db:"locale"`
+	InternalSignature string    `db:"internal_signature"`
+	CustomerID        string    `db:"customer_id"`
+	DeliveryService   string    `db:"delivery_service"`
+	Shardkey          string    `db:"shardkey"`
+	SmID              int       `db:"sm_id"`
+	DateCreated       string    `db:"date_created"`
+	OofShard          string    `db:"oof_shard"`
+
+	// Delivery
+	DeliveryName    string `db:"delivery_name"`
+	DeliveryPhone   string `db:"delivery_phone"`
+	DeliveryZip     string `db:"delivery_zip"`
+	DeliveryCity    string `db:"delivery_city"`
+	DeliveryAddress string `db:"delivery_address"`
+	DeliveryRegion  string `db:"delivery_region"`
+	DeliveryEmail   string `db:"delivery_email"`
+
+	// Payment
+	PaymentTransaction  string `db:"transaction"`
+	PaymentRequestID    string `db:"request_id"`
+	PaymentCurrency     string `db:"currency"`
+	PaymentProvider     string `db:"provider"`
+	PaymentAmount       int    `db:"amount"`
+	PaymentPaymentDt    int    `db:"payment_dt"`
+	PaymentBank         string `db:"bank"`
+	PaymentDeliveryCost int    `db:"delivery_cost"`
+	PaymentGoodsTotal   int    `db:"goods_total"`
+	PaymentCustomFee    int    `db:"custom_fee"`
+}

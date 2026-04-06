@@ -3,6 +3,7 @@ package repository
 import (
 	"WBTech_L0/internal/model"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
@@ -26,7 +27,7 @@ func (r *OrderPostgres) Insert(order model.Order) error {
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			return err
+			return rollbackErr
 		}
 		return err
 	}
@@ -36,7 +37,7 @@ func (r *OrderPostgres) Insert(order model.Order) error {
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			return err
+			return rollbackErr
 		}
 		return err
 	}
@@ -46,7 +47,7 @@ func (r *OrderPostgres) Insert(order model.Order) error {
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			return err
+			return rollbackErr
 		}
 		return err
 	}
@@ -66,7 +67,7 @@ func (r *OrderPostgres) Insert(order model.Order) error {
 	return tx.Commit()
 }
 
-func (r *OrderPostgres) GetOrderByID(uuid uuid.UUID) (model.Order, error) {
+func (r *OrderPostgres) GetOrderByID(orderUUID uuid.UUID) (model.Order, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return model.Order{}, err
@@ -74,43 +75,89 @@ func (r *OrderPostgres) GetOrderByID(uuid uuid.UUID) (model.Order, error) {
 
 	var order model.Order
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE order_uid=$1;", orderTable)
-	if err = r.db.Get(&order, query, uuid); err != nil {
+	query := fmt.Sprintf(`
+		SELECT 
+			o.order_uid, o.track_number, o.entry, o.locale, o.internal_signature, 
+			o.customer_id, o.delivery_service, o.shardkey, o.sm_id, o.date_created, o.oof_shard,
+			d.name as delivery_name, d.phone as delivery_phone, d.zip as delivery_zip, 
+			d.city as delivery_city, d.address as delivery_address, d.region as delivery_region, d.email as delivery_email,
+			p.transaction, p.request_id, p.currency, p.provider, p.amount, 
+			p.payment_dt, p.bank, p.delivery_cost, p.goods_total, p.custom_fee
+		FROM %s o
+		LEFT JOIN %s d ON o.order_uid = d.order_uid
+		LEFT JOIN %s p ON o.order_uid = p.order_uid
+		WHERE o.order_uid = $1;
+	`, orderTable, deliveryTable, paymentTable)
+
+	var result model.DBResult
+
+	if err = r.db.Get(&result, query, orderUUID); err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			return model.Order{}, err
+			return model.Order{}, rollbackErr
 		}
 		return model.Order{}, err
 	}
 
-	query = fmt.Sprintf("SELECT d.name, d.phone, d.zip, d.city, d.address, d.region, d.email FROM %s d WHERE order_uid=$1;", deliveryTable)
-	if err = r.db.Get(&(order.Delivery), query, uuid); err != nil {
+	order.OrderUID = result.OrderUID
+	order.TrackNumber = result.TrackNumber
+	order.Entry = result.Entry
+	order.Locale = result.Locale
+	order.InternalSignature = result.InternalSignature
+	order.CustomerID = result.CustomerID
+	order.DeliveryService = result.DeliveryService
+	order.Shardkey = result.Shardkey
+	order.SmID = result.SmID
+	order.DateCreated = result.DateCreated
+	order.OofShard = result.OofShard
+
+	order.Delivery = model.Delivery{
+		Name:    result.DeliveryName,
+		Phone:   result.DeliveryPhone,
+		Zip:     result.DeliveryZip,
+		City:    result.DeliveryCity,
+		Address: result.DeliveryAddress,
+		Region:  result.DeliveryRegion,
+		Email:   model.Email(result.DeliveryEmail),
+	}
+
+	order.Payment = model.Payment{
+		Transaction:  result.PaymentTransaction,
+		RequestID:    result.PaymentRequestID,
+		Currency:     result.PaymentCurrency,
+		Provider:     result.PaymentProvider,
+		Amount:       result.PaymentAmount,
+		PaymentDt:    result.PaymentPaymentDt,
+		Bank:         result.PaymentBank,
+		DeliveryCost: result.PaymentDeliveryCost,
+		GoodsTotal:   result.PaymentGoodsTotal,
+		CustomFee:    result.PaymentCustomFee,
+	}
+
+	itemQuery := fmt.Sprintf(`
+		SELECT i.chrt_id, i.track_number, i.price, i.rid, i.name, i.sale, 
+		       i.size, i.total_price, i.nm_id, i.brand, i.status 
+		FROM %s i 
+		WHERE i.order_uid = $1;
+	`, itemTable)
+
+	if err = r.db.Select(&order.Items, itemQuery, orderUUID); err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			return model.Order{}, err
+			return model.Order{}, rollbackErr
 		}
 		return model.Order{}, err
 	}
 
-	query = fmt.Sprintf("SELECT p.transaction, p.request_id, p.currency, p.provider, p.amount, p.payment_dt, p.bank, p.delivery_cost, p.goods_total, p.custom_fee FROM %s p WHERE order_uid=$1;", paymentTable)
-	if err = r.db.Get(&(order.Payment), query, uuid); err != nil {
+	if err = tx.Commit(); err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			return model.Order{}, err
+			return model.Order{}, rollbackErr
 		}
 		return model.Order{}, err
 	}
 
-	query = fmt.Sprintf("SELECT i.chrt_id, i.track_number, i.price, i.rid, i.name, i.sale, i.size, i.total_price, i.nm_id, i.brand, i.status FROM %s i WHERE order_uid=$1;", itemTable)
-	if err = r.db.Select(&(order.Items), query, uuid); err != nil {
-		rollbackErr := tx.Rollback()
-		if rollbackErr != nil {
-			return model.Order{}, err
-		}
-		return model.Order{}, err
-	}
-
-	return order, tx.Commit()
+	return order, nil
 }
 
 func (r *OrderPostgres) GetOrdersForCache(capacity int) ([]model.Order, error) {
@@ -125,7 +172,7 @@ func (r *OrderPostgres) GetOrdersForCache(capacity int) ([]model.Order, error) {
 	if err = r.db.Select(&orders, query, capacity); err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			return nil, err
+			return nil, rollbackErr
 		}
 		return nil, err
 	}
@@ -137,7 +184,7 @@ func (r *OrderPostgres) GetOrdersForCache(capacity int) ([]model.Order, error) {
 		if err = r.db.Get(&(order.Delivery), query, order.OrderUID); err != nil {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				return nil, err
+				return nil, rollbackErr
 			}
 			return nil, err
 		}
@@ -146,7 +193,7 @@ func (r *OrderPostgres) GetOrdersForCache(capacity int) ([]model.Order, error) {
 		if err = r.db.Get(&(order.Payment), query, order.OrderUID); err != nil {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				return nil, err
+				return nil, rollbackErr
 			}
 			return nil, err
 		}
@@ -155,7 +202,7 @@ func (r *OrderPostgres) GetOrdersForCache(capacity int) ([]model.Order, error) {
 		if err = r.db.Select(&(order.Items), query, order.OrderUID); err != nil {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				return nil, err
+				return nil, rollbackErr
 			}
 			return nil, err
 		}

@@ -2,6 +2,8 @@ package repository
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -27,6 +29,11 @@ func NewPostgresDB(cfg Config) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	db.SetMaxOpenConns(25)                 // Максимум открытых соединений
+	db.SetMaxIdleConns(10)                 // Максимум idle соединений
+	db.SetConnMaxLifetime(5 * time.Minute) // Время жизни соединения
+	db.SetConnMaxIdleTime(1 * time.Minute) // Время idle
 
 	if err = db.Ping(); err != nil {
 		return nil, err
