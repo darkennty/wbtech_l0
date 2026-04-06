@@ -1,9 +1,10 @@
 package consumer
 
 import (
+	"strings"
+
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 const (
