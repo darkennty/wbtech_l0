@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"time"
 )
 
 // @Summary      Get Order By ID
@@ -47,10 +47,18 @@ func (h *Handler) getOrderByID(ctx *gin.Context) {
 			return
 		}
 
-		logrus.Print(fmt.Sprintf("OrderUID: %s - using database data. Time: %d ms", orderUID, queryTime.Milliseconds()))
+		logrus.WithFields(logrus.Fields{
+			"order_uid": orderUID,
+			"time_ms":   queryTime.Milliseconds(),
+			"source":    "database",
+		}).Info("Order retrieved")
 		ctx.JSON(http.StatusOK, order)
 	} else {
-		logrus.Print(fmt.Sprintf("OrderUID: %s - using cached data. Time: %d ms", orderUID, queryTime.Milliseconds()))
+		logrus.WithFields(logrus.Fields{
+			"order_uid": orderUID,
+			"time_ms":   queryTime.Milliseconds(),
+			"source":    "cache",
+		}).Info("Order retrieved")
 		ctx.JSON(http.StatusOK, cachedOrder)
 	}
 }
